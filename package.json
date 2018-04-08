@@ -1,0 +1,19 @@
+{
+  "name": "MyNode",
+  "version": "1.0.0",
+  "author": "边军平 <bianjunping@limefamily.com>",
+  "private": true,
+  "scripts": {
+    "server": "nodemon server/app.js"
+  },
+  "dependencies": {
+    "express": "^4.16.3",
+    "express-session": "^1.15.6",
+    "formidable": "^1.2.1",
+    "lodash": "^4.17.5",
+    "moment": "^2.22.0",
+    "mongodb": "^2.0.43",
+    "morgan": "^1.9.0",
+    "nodemon": "^1.17.3"
+  }
+}
