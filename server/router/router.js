@@ -26,18 +26,8 @@ exports.showAdmin = function(rq, rs, n){
         var username = fields.username,
             password = fields.password;
             
-        password = md5(md5(password) + "admin");
-        //现在可以证明，用户名没有被占用
-            // db.insertOne("users", {
-            //     "username": username,
-            //     "password": password,
-            //     "avatar": "moren.jpg"
-            // }, function (err, result) {
-            //     if (err) {
-            //         res.send("-3"); //服务器错误
-            //         return;
-            //     }
-            // })
+        password = md5(md5(password) + "bianjunping");
+        
         //查询数据库，看看有没有个这个人
         db.find("users", {"username": username}, {},function (err, result) {
             if (err) {
@@ -49,7 +39,6 @@ exports.showAdmin = function(rq, rs, n){
                 rs.send("-1"); //用户名不存在
                 return;
             }
-            
             //有的话，进一步看看这个人的密码是否匹配
             if (password == result[0].password) {
                 
@@ -58,7 +47,7 @@ exports.showAdmin = function(rq, rs, n){
 
                 rs.status(200);
                 //rs.end(util.inspect({fields: fields, files: files}))
-                rs.send("1")
+                rs.send({name: md5(username), state: 1})
                 return;
             } else {
                 rs.send("-2");  //密码错误
@@ -68,6 +57,94 @@ exports.showAdmin = function(rq, rs, n){
     });
 }
 
+// 注册
+exports.setRegister = function(rq, rs, n){
+    var form = new formidable.IncomingForm();
+    form.parse(rq, function(err, fields, files){
+        var username = fields.username,
+            password = fields.password
+            mail     = fields.mail,
+            subtime   = fields.time;
+
+        password = md5(md5(password) + "bianjunping");
+        
+        db.find("users",{"username": username}, {}, function (err, result) {
+            if(err){
+                rs.send('-5');
+                return;
+            }
+            if(result.length == 0){
+                //现在可以证明，用户名没有被占用
+                db.insertOne("users", {
+                    "username": username,
+                    "password": password,
+                    "mail": mail,
+                    "subtime": subtime,
+                    "createtime": moment().format('YYYY-MM-DD hh:mm:ss').toString(),
+                    "avatar": "moren.jpg"
+                }, function (err, result) {
+                    if (err) {
+                        rs.send("-5"); //服务器错误
+                        return;
+                    }
+                    rq.session.login = "1";
+                    rq.session.username = username;
+                    rs.status(200);
+                    //rs.end(util.inspect({fields: fields, files: files}))
+                    rs.send('1')
+                    return;
+                })
+            }else{
+                rs.status(200);
+                rs.send('-1'); // 此用户名被占用
+                return;
+            }
+        })
+    })
+}
+
+// 获取所有用户
+exports.getCustomList = function(rq, rs, n) {
+    var form = new formidable.IncomingForm();
+    form.parse(rq, function(err, fields, files){
+        var name = fields.name;
+        var ser_name = md5(rq.session.username);
+        if(name == ser_name){
+            db.find('users',{},{},function(err, result){
+                if(err){
+                    rs.send('-5');
+                    return;
+                }
+                rs.status(200);
+                rs.send(result);
+                return;
+            })
+
+        }
+
+    })
+}
+
+// 删除一个用户
+exports.deleteCustom = function(rq, rs, n) {
+    var form = new formidable.IncomingForm();
+    form.parse(rq, function(err, fields, files) {
+        var username = fields.username;
+        if(username == rq.session.username){
+            rs.status(200);
+            rs.send('-1');
+            return;
+        }
+        db.deleteMany('users', {username}, (err, uesult) => {
+            if(err){
+                rs.send('-5');
+                return;
+            }
+            rs.status(200);
+            rs.send('1');
+        })
+    })
+}
 // 获取所有的留言数据
 exports.getLeaveData = function(rq, rs, n) {
     if (rq.session.login != "1") {
@@ -154,7 +231,6 @@ exports.deleteMany = function (rq, rs, n) {
         var username = fields.username;
         db.deleteMany('posts',{username},(err, result) => {
             if(err){
-                console.log(err);
                 rs.send('-3')
                 return;
             }
